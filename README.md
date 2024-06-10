@@ -23,8 +23,6 @@ Seu papel é construir uma RESTful API que permita:
 
 **Importante 3: Sempre que a validação de uma requisição falhar, responda com código de erro e mensagem adequada à situação, ok?**
 
-**Importante 4: O link de acesso a esta API se encontra no final deste README. Este link é somente para testes (ou seja, será possível realizar requisições a esta API através do link fornecido visando AUXILIAR principalmente o desenvolvimento do desafio de Front-end, o que permitirá o desenvolvimento em paralelo de ambos os desafios)!**
-
 **Exemplo:**
 
 ```javascript
@@ -34,6 +32,33 @@ Seu papel é construir uma RESTful API que permita:
     "mensagem": "Transação não encontrada!"
 }
 ```
+
+**Importante 4: O link de acesso a esta API se encontra no final deste README. Este link é somente para testes (ou seja, será possível realizar requisições a esta API através do link fornecido visando AUXILIAR principalmente o desenvolvimento do desafio de Front-end, o que permitirá o desenvolvimento em paralelo de ambos os desafios)!**
+
+**Importante 5: Para que o projeto funcione corretamente e possa ser corrigido, é necessário definir as variáveis de ambiente utilizando o arquivo src/configs.js.**
+
+**Exemplo de uso do arquivo**
+
+```javascript
+const config = require('./src/configs');
+
+// configurando banco de dados
+const { Pool } = require('pg');
+const pool = new Pool({
+  host: config.dbHost,
+  port: config.dbPort,
+  database: config.dbName,
+  user: config.dbUser,
+  password: config.dbPassword
+});
+
+// iniciando servidor
+app.listen(config.serverPort, () => {
+  console.log(`Servidor rodando na porta ${config.serverPort}`);
+});
+```
+
+
 
 ## **Banco de dados**
 
