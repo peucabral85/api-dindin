@@ -49,15 +49,15 @@ const obterExtrato = async (req, res) => {
     try {
         const idToken = req.usuario.id;
 
-        const somaExtrato = await pool.query(`
+        const { rows: somaExtrato } = await pool.query(`
         select coalesce(sum(valor) filter(where tipo = 'entrada'),0) as "entrada",
         coalesce(sum(valor) filter(where tipo = 'saida'),0) as "saida"
         from transacoes where usuario_id = $1`, [idToken]
         );
 
         const totalExtrato = {
-            "entrada": Number(somaExtrato.rows[0].entrada),
-            "saida": Number(somaExtrato.rows[0].saida)
+            "entrada": Number(somaExtrato[0].entrada),
+            "saida": Number(somaExtrato[0].saida)
         }
 
         return res.status(200).json(totalExtrato);
@@ -83,9 +83,9 @@ const listarTransacoes = async (req, res) => {
             parametros.push(filtrosCategoria);
         }
 
-        const transacoesFiltradas = await pool.query(query, parametros);
+        const { rows: transacoesFiltradas } = await pool.query(query, parametros);
 
-        res.status(200).json(transacoesFiltradas.rows);
+        res.status(200).json(transacoesFiltradas);
 
     } catch (error) {
         return res.status(500).json({ mensagem: "Erro interno do servidor." });
