@@ -16,7 +16,7 @@ const cadastrarTransacao = async (req, res) => {
 
         const cadastro = await pool.query(`
             insert into transacoes (descricao, valor, data, categoria_id, usuario_id, tipo)
-            values ($1, $2, $3, $4, $5, $6) returning *
+            values ($1, $2, $3, $4, $5, lower($6)) returning *
             `, [descricao, valor, data, categoria_id, idToken, tipo]
         );
 
