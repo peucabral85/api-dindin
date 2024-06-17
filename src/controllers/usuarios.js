@@ -58,7 +58,50 @@ const logarUsuario = async (req, res) => {
     }
 }
 
+const detalharUsuario = async (req, res) => {
+    try {
+        const id = req.usuario.id;
+
+        const { rows: usuario } = await pool.query('select id, nome, email from usuarios where id = $1', [id]);
+
+        const resultado = {
+            ...usuario
+        }
+
+        return res.status(200).json(resultado[0]);
+    } catch (error) {
+        res.status(500).json({ mensagem: "Erro interno do servidor." });
+    }
+}
+
+const atualizarUsuario = async (req, res) => {
+    try {
+        const { nome, email, senha } = req.body;
+        const idToken = req.usuario.id;
+
+        const emailVerificado = await pool.query('select * from usuarios where email ilike $1 and id <> $2', [email, idToken]);
+
+        if (emailVerificado.rowCount > 0) {
+            return res.status(400).json({ mensagem: "O e-mail informado já está sendo utilizado por outro usuário." });
+        }
+
+        const senhaCriptografada = await bcrypt.hash(senha, 10);
+
+        await pool.query(`
+            update usuarios
+            set nome = $1, email = $2, senha = $3
+            where id = $4`, [nome, email, senhaCriptografada, idToken]
+        );
+
+        return res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ mensagem: "Erro interno do servidor." });
+    }
+}
+
 module.exports = {
     cadastrarUsuario,
-    logarUsuario
+    logarUsuario,
+    detalharUsuario,
+    atualizarUsuario
 }
