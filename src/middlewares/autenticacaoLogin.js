@@ -24,10 +24,12 @@ const validarLogin = async (req, res, next) => {
         req.usuario = usuarioEncontrado.rows[0];
 
         next();
+
     } catch (error) {
         if (error.message === 'jwt expired') {
             return res.status(401).json({ mensagem: 'Token expirado. Faça login novamente!' });
         }
+
         return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
     }
 }
