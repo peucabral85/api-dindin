@@ -92,9 +92,71 @@ const listarTransacoes = async (req, res) => {
     }
 }
 
+const atualizarTransacao = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { descricao, valor, data, categoria_id, tipo } = req.body;
+        const IdToken = req.usuario.id;
+
+        const transacaoValidada = await pool.query(`
+            select * from transacoes where usuario_id = $1 and id = $2`, [IdToken, id]
+        );
+
+        if (transacaoValidada.rowCount < 1) {
+            return res.status(404).json({ mensagem: "Transação não encontrada." });
+        }
+
+        const categoriaEncontrada = await pool.query(`
+            select * from categorias where id = $1
+            `, [categoria_id]
+        );
+
+        if (categoriaEncontrada.rowCount < 1) {
+            return res.status(403).json({ mensagem: "Categoria informada não encontrada." });
+        }
+
+        await pool.query(`
+            update transacoes set descricao = $1, valor = $2, data = $3, categoria_id = $4, tipo = lower($5)
+            where usuario_id = $6 and id = $7
+            `, [descricao, valor, data, categoria_id, tipo, IdToken, id]
+        );
+
+        return res.status(204).json();
+
+    } catch (error) {
+        return res.status(500).json({ mensagem: "Erro interno do servidor." });
+    }
+}
+
+const excluirTransacao = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const idToken = req.usuario.id;
+
+        const transacaoValidada = await pool.query(`
+            select * from transacoes where usuario_id = $1 and id = $2`, [idToken, id]
+        );
+
+        if (transacaoValidada.rowCount < 1) {
+            return res.status(404).json({ mensagem: "Transação não encontrada." });
+        }
+
+        await pool.query(`
+            delete from transacoes where usuario_id = $1 and id = $2`, [idToken, id]
+        );
+
+        res.status(204).json();
+
+    } catch (error) {
+        return res.status(500).json({ mensagem: "Erro interno do servidor." });
+    }
+}
+
 module.exports = {
     cadastrarTransacao,
     detalharTransacao,
     obterExtrato,
-    listarTransacoes
+    listarTransacoes,
+    atualizarTransacao,
+    excluirTransacao
 }
