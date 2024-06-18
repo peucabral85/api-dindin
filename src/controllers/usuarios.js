@@ -3,15 +3,17 @@ const { jwtSecret } = require('../configs/configs');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const verificarEmailExistente = async (email) => {
+    const emailValidado = await pool.query('select * from usuarios where email ilike $1', [email]);
+
+    return emailValidado;
+}
+
 const cadastrarUsuario = async (req, res) => {
-    const { nome, email, senha } = req.body;
-
     try {
+        const { nome, email, senha } = req.body;
 
-        const emailValidado = await pool.query(
-            `select * from usuarios where email ilike $1
-            `, [email]
-        );
+        const emailValidado = await verificarEmailExistente(email);
 
         if (emailValidado.rowCount > 0) {
             return res.status(400).json({ mensagem: "Já existe usuário cadastrado com o e-mail informado." })
@@ -19,12 +21,12 @@ const cadastrarUsuario = async (req, res) => {
 
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-        const novoUsuario = await pool.query(
+        const { rows: novoUsuario } = await pool.query(
             `insert into usuarios (nome, email, senha) values ($1, $2, $3) returning id, nome, email
             `, [nome, email, senhaCriptografada]
         );
 
-        return res.status(201).json(novoUsuario.rows[0]);
+        return res.status(201).json(novoUsuario[0]);
 
     } catch (error) {
         res.status(500).json({ mensagem: "Erro interno do servidor." });
@@ -32,10 +34,10 @@ const cadastrarUsuario = async (req, res) => {
 }
 
 const logarUsuario = async (req, res) => {
-    const { email, senha } = req.body;
-
     try {
-        const usuarioLogado = await pool.query('select * from usuarios where email = $1', [email]);
+        const { email, senha } = req.body;
+
+        const usuarioLogado = await verificarEmailExistente(email);
 
         if (usuarioLogado.rowCount < 1) {
             return res.status(401).json({ mensagem: "Usuário e/ou senha inválido(s)." });
@@ -58,20 +60,16 @@ const logarUsuario = async (req, res) => {
     }
 }
 
-const detalharUsuario = async (req, res) => {
-    try {
-        const id = req.usuario.id;
+const detalharUsuario = (req, res) => {
+    const { id, nome, email } = req.usuario;
 
-        const { rows: usuario } = await pool.query('select id, nome, email from usuarios where id = $1', [id]);
-
-        const resultado = {
-            ...usuario
-        }
-
-        return res.status(200).json(resultado[0]);
-    } catch (error) {
-        res.status(500).json({ mensagem: "Erro interno do servidor." });
+    const resultado = {
+        id,
+        nome,
+        email
     }
+
+    return res.status(200).json(resultado);
 }
 
 const atualizarUsuario = async (req, res) => {
@@ -79,9 +77,9 @@ const atualizarUsuario = async (req, res) => {
         const { nome, email, senha } = req.body;
         const idToken = req.usuario.id;
 
-        const emailVerificado = await pool.query('select * from usuarios where email ilike $1 and id <> $2', [email, idToken]);
+        const emailValidado = await verificarEmailExistente(email);
 
-        if (emailVerificado.rowCount > 0) {
+        if (emailValidado.rowCount > 0 && emailValidado.rows[0].id !== idToken) {
             return res.status(400).json({ mensagem: "O e-mail informado já está sendo utilizado por outro usuário." });
         }
 
@@ -93,7 +91,8 @@ const atualizarUsuario = async (req, res) => {
             where id = $4`, [nome, email, senhaCriptografada, idToken]
         );
 
-        return res.status(204).send();
+        return res.status(204).json();
+
     } catch (error) {
         res.status(500).json({ mensagem: "Erro interno do servidor." });
     }
