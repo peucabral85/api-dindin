@@ -24,7 +24,7 @@ const cadastrarTransacao = async (req, res) => {
         const categoriaEncontrada = validarCategoria(categoria_id);
 
         if (categoriaEncontrada.rowCount < 1) {
-            return res.status(403).json({ mensagem: "Categoria informada não encontrada." });
+            return res.status(404).json({ mensagem: "Categoria informada não encontrada." });
         }
 
         const cadastro = await pool.query(`

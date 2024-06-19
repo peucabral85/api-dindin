@@ -16,7 +16,7 @@ const cadastrarUsuario = async (req, res) => {
         const emailValidado = await verificarEmailExistente(email);
 
         if (emailValidado.rowCount > 0) {
-            return res.status(400).json({ mensagem: "Já existe usuário cadastrado com o e-mail informado." })
+            return res.status(409).json({ mensagem: "Já existe usuário cadastrado com o e-mail informado." })
         }
 
         const senhaCriptografada = await bcrypt.hash(senha, 10);
@@ -80,7 +80,7 @@ const atualizarUsuario = async (req, res) => {
         const emailValidado = await verificarEmailExistente(email);
 
         if (emailValidado.rowCount > 0 && emailValidado.rows[0].id !== idToken) {
-            return res.status(400).json({ mensagem: "O e-mail informado já está sendo utilizado por outro usuário." });
+            return res.status(409).json({ mensagem: "O e-mail informado já está sendo utilizado por outro usuário." });
         }
 
         const senhaCriptografada = await bcrypt.hash(senha, 10);
