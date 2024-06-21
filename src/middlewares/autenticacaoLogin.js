@@ -26,8 +26,8 @@ const validarLogin = async (req, res, next) => {
         next();
 
     } catch (error) {
-        if (error.message === 'jwt expired') {
-            return res.status(401).json({ mensagem: 'Token expirado. Faça login novamente!' });
+        if (error.message === 'jwt expired' || error.message === 'invalid token' || error.message === 'invalid signature') {
+            return res.status(401).json({ mensagem: 'Autenticação falhou. Por favor, verifique as credenciais e tente novamente!' });
         }
 
         return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
