@@ -12,4 +12,4 @@ app.use(rotasTransacoes);
 app.use(rotasCategorias);
 
 app.listen(serverPort, () =>
-    console.log(`Server is running on port ${serverPort}`));
+    console.log(`Server rodando na porta ${serverPort}`));
