@@ -1,19 +1,32 @@
 const pool = require('../connections/conexao');
 
 const validarCategoria = async (categoria_id) => {
-    const categoriaEncontrada = await pool.query(`
+    try {
+        const categoriaEncontrada = await pool.query(`
         select * from categorias where id = $1`, [categoria_id]
-    );
+        );
 
-    return categoriaEncontrada;
+        return categoriaEncontrada;
+
+    } catch (error) {
+        throw error;
+    }
 }
 
-const validarTransacao = async (idToken, id) => {
-    const transacaoValidada = await pool.query(`
-        select * from transacoes where usuario_id = $1 and id = $2`, [idToken, id]
-    );
+const validarTransacao = async (idUsuario, idTransacao) => {
+    try {
+        const transacaoValidada = await pool.query(`
+        select t.id, t.tipo, t.descricao, t.valor, t.data, t.usuario_id, t.categoria_id, c.descricao as nome_categoria 
+        from transacoes t
+        inner join categorias c on t.categoria_id = c.id  
+        where t.usuario_id = $1 and t.id = $2`, [idUsuario, idTransacao]
+        );
 
-    return transacaoValidada;
+        return transacaoValidada;
+
+    } catch (error) {
+        throw error;
+    }
 }
 
 const cadastrarTransacao = async (req, res) => {
@@ -21,19 +34,30 @@ const cadastrarTransacao = async (req, res) => {
         const { descricao, valor, data, categoria_id, tipo } = req.body;
         const idToken = req.usuario.id;
 
-        const categoriaEncontrada = validarCategoria(categoria_id);
+        const { rows: categoriaEncontrada } = await validarCategoria(categoria_id);
 
-        if (categoriaEncontrada.rowCount < 1) {
+        if (!categoriaEncontrada[0]) {
             return res.status(404).json({ mensagem: "Categoria informada não encontrada." });
         }
 
-        const cadastro = await pool.query(`
+        const { rows: cadastro } = await pool.query(`
             insert into transacoes (descricao, valor, data, categoria_id, usuario_id, tipo)
-            values ($1, $2, $3, $4, $5, lower($6)) returning *
+            values ($1, $2, $3 , $4, $5, lower($6)) returning *
             `, [descricao, valor, data, categoria_id, idToken, tipo]
         );
 
-        return res.status(201).json(cadastro.rows[0]);
+        const cadastroOrdenado = {
+            "id": cadastro[0].id,
+            "tipo": cadastro[0].tipo,
+            "descricao": cadastro[0].descricao,
+            "valor": cadastro[0].valor,
+            "data": cadastro[0].data,
+            "usuario_id": cadastro[0].usuario_id,
+            "categoria_id": cadastro[0].categoria_id,
+            "categoria_nome": categoriaEncontrada[0].descricao
+        }
+
+        return res.status(201).json(cadastroOrdenado);
 
     } catch (error) {
         return res.status(500).json({ mensagem: "Erro interno do servidor." });
@@ -45,13 +69,13 @@ const detalharTransacao = async (req, res) => {
         const { id } = req.params;
         const idToken = req.usuario.id;
 
-        const transacaoValidada = await validarTransacao(idToken, id);
+        const { rows: transacaoValidada } = await validarTransacao(idToken, id);
 
-        if (transacaoValidada.rowCount < 1) {
-            return res.status(404).json({ mensagem: "Transação não encontrada." });
+        if (!transacaoValidada[0]) {
+            return res.status(404).json({ mensagem: "Transação não encontrada ou não pertence ao usuário." });
         }
 
-        return res.status(200).json(transacaoValidada.rows[0]);
+        return res.status(200).json(transacaoValidada[0]);
 
     } catch (error) {
         return res.status(500).json({ mensagem: "Erro interno do servidor." });
@@ -85,16 +109,17 @@ const listarTransacoes = async (req, res) => {
         const parametros = [req.usuario.id];
         const filtro = req.query.filtro;
 
-        let query = `select t.*, c.descricao as categoria_nome from transacoes t 
+        let query = `select t.id, t.tipo, t.descricao, t.valor, t.data, t.usuario_id, 
+        t.categoria_id, c.descricao as categoria_nome from transacoes t 
         inner join categorias c on t.categoria_id = c.id
         where t.usuario_id = $1`;
 
-        const filtroQuery = ` and c.descricao = any($2::text[])`;
+        const filtroQuery = ` and lower(c.descricao) = any($2::text[])`;
 
         if (filtro) {
             const filtrosCategoria = Array.isArray(filtro) ? filtro : [filtro];
             query += filtroQuery
-            parametros.push(filtrosCategoria);
+            parametros.push(filtrosCategoria.map(filtro => filtro.toLowerCase()));
         }
 
         const { rows: transacoesFiltradas } = await pool.query(query, parametros);
@@ -112,15 +137,15 @@ const atualizarTransacao = async (req, res) => {
         const { descricao, valor, data, categoria_id, tipo } = req.body;
         const IdToken = req.usuario.id;
 
-        const transacaoValidada = await validarTransacao(IdToken, id);
+        const { rows: transacaoValidada } = await validarTransacao(IdToken, id);
 
-        if (transacaoValidada.rowCount < 1) {
-            return res.status(404).json({ mensagem: "Transação não encontrada." });
+        if (!transacaoValidada[0]) {
+            return res.status(404).json({ mensagem: "Transação não encontrada ou não pertence ao usuário." });
         }
 
-        const categoriaEncontrada = validarCategoria(categoria_id);
+        const { rows: categoriaEncontrada } = await validarCategoria(categoria_id);
 
-        if (categoriaEncontrada.rowCount < 1) {
+        if (!categoriaEncontrada[0]) {
             return res.status(404).json({ mensagem: "Categoria informada não encontrada." });
         }
 
@@ -142,10 +167,10 @@ const excluirTransacao = async (req, res) => {
         const { id } = req.params;
         const idToken = req.usuario.id;
 
-        const transacaoValidada = await validarTransacao(idToken, id);
+        const { rows: transacaoValidada } = await validarTransacao(idToken, id);
 
-        if (transacaoValidada.rowCount < 1) {
-            return res.status(404).json({ mensagem: "Transação não encontrada." });
+        if (!transacaoValidada[0]) {
+            return res.status(404).json({ mensagem: "Transação não encontrada ou não pertence ao usuário." });
         }
 
         await pool.query(`
