@@ -7,7 +7,7 @@
     "dev": "nodemon ./src/index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Pericles Cabral",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
