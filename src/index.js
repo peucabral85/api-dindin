@@ -1,5 +1,5 @@
+require('dotenv').config();
 const express = require('express');
-const { serverPort } = require('./configs/configs');
 const rotasUsuarios = require('./routes/usuarios');
 const rotasTransacoes = require('./routes/transacoes');
 const rotasCategorias = require('./routes/categorias');
@@ -11,5 +11,5 @@ app.use(rotasUsuarios);
 app.use(rotasTransacoes);
 app.use(rotasCategorias);
 
-app.listen(serverPort, () =>
-    console.log(`Server rodando na porta ${serverPort}`));
+app.listen(process.env.PORT, () =>
+    console.log(`Server rodando na porta ${process.env.PORT}`));
