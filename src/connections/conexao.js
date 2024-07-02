@@ -1,13 +1,12 @@
-const config = require('../configs/configs');
-
-// configurando banco de dados
-const { Pool } = require('pg');
-const pool = new Pool({
-    host: config.dbHost,
-    port: config.dbPort,
-    database: config.dbName,
-    user: config.dbUser,
-    password: config.dbPassword
+const knex = require('knex')({
+    client: process.env.CLIENT_DB,
+    connection: {
+        host: process.env.HOST_DB,
+        port: process.env.PORT_DB,
+        user: process.env.USER_DB,
+        password: process.env.PASS_DB,
+        database: process.env.NAME_DB
+    }
 });
 
-module.exports = pool;
+module.exports = knex;
