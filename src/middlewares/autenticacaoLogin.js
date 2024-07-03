@@ -1,6 +1,5 @@
-const pool = require('../connections/conexao');
+const knex = require('../connections/conexao');
 const jwt = require('jsonwebtoken');
-const { jwtSecret } = require('../configs/configs');
 
 const validarLogin = async (req, res, next) => {
     try {
@@ -13,15 +12,15 @@ const validarLogin = async (req, res, next) => {
 
         const token = authorization.split(' ')[1];
 
-        const { id } = jwt.verify(token, jwtSecret);
+        const { id } = jwt.verify(token, process.env.PASS_JWT);
 
-        const usuarioEncontrado = await pool.query(`select * from usuarios where id = $1`, [id]);
+        const usuarioEncontrado = await knex('usuarios').where({ id }).first();
 
-        if (usuarioEncontrado.rowCount < 1) {
+        if (!usuarioEncontrado) {
             return res.status(401).json({ mensagem: "Acesso não autorizado!" });
         }
 
-        req.usuario = usuarioEncontrado.rows[0];
+        req.usuario = usuarioEncontrado;
 
         next();
 
