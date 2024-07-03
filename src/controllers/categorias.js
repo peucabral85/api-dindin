@@ -1,7 +1,7 @@
-const pool = require('../connections/conexao');
+const knex = require('../connections/conexao');
 
 const listarCategorias = async (req, res) => {
-    const { rows: categorias } = await pool.query('select * from categorias');
+    const categorias = await knex('categorias');
 
     return res.status(200).json(categorias);
 }
