@@ -1,13 +1,18 @@
 const express = require('express');
 const { cadastrarUsuario, logarUsuario, detalharUsuario, atualizarUsuario } = require('../controllers/usuarios');
-const { validarCamposCadastro, validarCamposLogin } = require('../middlewares/validacoesUsuarios');
 const validarLogin = require('../middlewares/autenticacaoLogin');
+const validarCorpoRequisicao = require('../middlewares/validarCorpoRequisicao');
+const schemaUsuario = require('../schemas/schemaUsuarios');
+const schemaLogin = require('../schemas/schemaLogin');
 
 const rotas = express();
 
-rotas.get('/usuario', validarLogin, detalharUsuario);
-rotas.put('/usuario', validarLogin, validarCamposCadastro, atualizarUsuario);
-rotas.post('/usuario', validarCamposCadastro, cadastrarUsuario);
-rotas.post('/login', validarCamposLogin, logarUsuario);
+rotas.post('/usuario', validarCorpoRequisicao(schemaUsuario), cadastrarUsuario);
+rotas.post('/login', validarCorpoRequisicao(schemaLogin), logarUsuario);
+
+rotas.use(validarLogin);
+
+rotas.get('/usuario', detalharUsuario);
+rotas.put('/usuario', validarCorpoRequisicao(schemaUsuario), atualizarUsuario);
 
 module.exports = rotas;
