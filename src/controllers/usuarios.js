@@ -1,13 +1,6 @@
-const knex = require('../connections/conexao');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
-const verificarEmailExistente = async (email) => {
-    const emailValidado = await knex('usuarios')
-        .where('email', 'ilike', email);
-
-    return emailValidado;
-}
+const { verificarEmailExistente, insertUsuario, updateUsuario } = require('../services/usuarios');
 
 const cadastrarUsuario = async (req, res) => {
     try {
@@ -21,15 +14,9 @@ const cadastrarUsuario = async (req, res) => {
 
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-        const novoUsuario = await knex('usuarios')
-            .insert({
-                nome,
-                email: knex.raw('lower(?)', [email]),
-                senha: senhaCriptografada
-            })
-            .returning(['id', 'nome', 'email']);
+        const novoUsuario = await insertUsuario(nome, email, senhaCriptografada);
 
-        return res.status(201).json(novoUsuario[0]);
+        return res.status(201).json(novoUsuario);
 
     } catch (error) {
         res.status(500).json({ mensagem: "Erro interno do servidor." });
@@ -88,13 +75,7 @@ const atualizarUsuario = async (req, res) => {
 
         const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-        await knex('usuarios')
-            .update({
-                nome,
-                email: knex.raw('lower(?)', [email]),
-                senha: senhaCriptografada
-            })
-            .where({ id: idToken });
+        await updateUsuario(nome, email, senhaCriptografada, idToken);
 
         return res.status(204).json();
 
